@@ -1,32 +1,23 @@
 ---
 - name: Block an IP using iptables (INPUT and DOCKER-USER)
   hosts: localhost
-  become: yes
-  vars:
-    malicious_ip: "1.2.3.4"
+  become: true
+  gather_facts: true
+
   tasks:
+    - name: Ensure iptables is installed
+      package:
+        name: iptables
+        state: present
+      delegate_to: 127.0.0.1
 
     - name: Check if IP is already blocked in INPUT
-      shell: iptables -C INPUT -s {{ malicious_ip }} -j DROP
-      register: input_rule_check
-      ignore_errors: yes
+      shell: iptables -C INPUT -s 1.2.3.4 -j DROP
+      register: check_input
+      ignore_errors: true
+      delegate_to: 127.0.0.1
 
     - name: Block IP in INPUT chain if not already present
-      shell: iptables -A INPUT -s {{ malicious_ip }} -j DROP
-      when: input_rule_check.rc != 0
-
-    - name: Check if IP is already blocked in DOCKER-USER
-      shell: iptables -C DOCKER-USER -s {{ malicious_ip }} -j DROP
-      register: docker_rule_check
-      ignore_errors: yes
-
-    - name: Block IP in DOCKER-USER chain if not already present
-      shell: iptables -I DOCKER-USER -s {{ malicious_ip }} -j DROP
-      when: docker_rule_check.rc != 0
-
-    - name: Hiển thị xác nhận
-      shell: iptables -L -v -n | grep {{ malicious_ip }}
-      register: iptables_output
-
-    - debug:
-        msg: "{{ iptables_output.stdout_lines }}"
+      shell: iptables -A INPUT -s 1.2.3.4 -j DROP
+      when: check_input.rc != 0
+      delegate_to: 127.0.0.1
