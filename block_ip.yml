@@ -1,3 +1,4 @@
+
 ---
 - name: Block an IP using iptables (INPUT and DOCKER-USER)
   hosts: localhost
@@ -5,12 +6,6 @@
   gather_facts: true
 
   tasks:
-    - name: Ensure iptables is installed
-      package:
-        name: iptables
-        state: present
-      delegate_to: 127.0.0.1
-
     - name: Check if IP is already blocked in INPUT
       shell: iptables -C INPUT -s 1.2.3.4 -j DROP
       register: check_input
