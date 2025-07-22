@@ -1,6 +1,6 @@
 ---
 - name: Block an IP using iptables (INPUT and DOCKER-USER)
-  hosts: firewall
+  hosts: localhost
   become: yes
   vars:
     malicious_ip: "1.2.3.4"
