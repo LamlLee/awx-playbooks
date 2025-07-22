@@ -1,14 +1,33 @@
-- name: Block a malicious IP using iptables
+---
+- name: Block an IP using iptables (INPUT and DOCKER-USER)
   hosts: localhost
   become: yes
+  vars:
+    malicious_ip: "1.2.3.4"  # Có thể override từ AWX khi chạy job
   tasks:
-    - name: Kiểm tra rule đã tồn tại chưa
-      ansible.builtin.command: /usr/sbin/iptables -C INPUT -s 1.1.1.1 -j DROP
-      register: iptables_check
+
+    - name: "Check if IP is already blocked in INPUT"
+      shell: iptables -C INPUT -s {{ malicious_ip }} -j DROP
+      register: input_rule_check
       ignore_errors: yes
 
-    - name: Thêm rule nếu chưa tồn tại
-      ansible.builtin.command: /usr/sbin/iptables -A INPUT -s 1.1.1.1 -j DROP
-      when: iptables_check.rc != 0
+    - name: "Block IP in INPUT chain if not already present"
+      shell: iptables -A INPUT -s {{ malicious_ip }} -j DROP
+      when: input_rule_check.rc != 0
 
+    - name: "Check if IP is already blocked in DOCKER-USER"
+      shell: iptables -C DOCKER-USER -s {{ malicious_ip }} -j DROP
+      register: docker_rule_check
+      ignore_errors: yes
 
+    - name: "Block IP in DOCKER-USER chain if not already present"
+      shell: iptables -I DOCKER-USER -s {{ malicious_ip }} -j DROP
+      when: docker_rule_check.rc != 0
+
+    - name: "Confirm IP block rules have been added"
+      shell: iptables -L -v -n | grep {{ malicious_ip }}
+      register: iptables_output
+
+    - name: "Hiển thị kết quả"
+      debug:
+        msg: "{{ iptables_output.stdout_lines }}"
